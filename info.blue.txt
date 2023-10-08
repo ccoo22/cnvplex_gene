@@ -1,0 +1,19 @@
+APC	 NM_000038.6	CNV变异超过100个	特殊突变染色体易位
+BMPR2	 NM_001204.7	CNV变异超过100个	.
+BRCA2（同源数据库查不到信息）	 NM_000059.4	CNV变异超过100个	.
+COL4A5	 NM_000495.4	CNV变异超过100个	.
+CYBB	NM_000397.3	CNV变异超过100个	.
+DOCK8	 NM_203447.3	CNV变异超过100个	.
+MECP2	 NM_004992.3	CNV变异超过100个	特殊突变染色体易位
+PMS2	 NM_000535.6	CNV变异超过100个	特殊突变：Del. 222 bp, inv. 918 kb (incl. ex. 1-10), dup. 105 kb；特殊突变：Del. entire gene and dupl. of pseudogene；特殊突变：Fusion PMS2 ex. 10 - USP42 ex. 3；特殊突变：Fusion transcr. ex. 10 into seq. derived from int. 14 CCZ1B；特殊突变：Intrachromosomal PMS2-PMS2CL translocation；特殊突变：Recombination with PMS2CL pseudogene, breakpoint intron 10
+TSC2	 NM_000548.4	CNV变异超过100个	特殊突变：inversion incl. ex. 17；特殊突变染色体易位：Translocation t(16;19)(p13.3;p13.3)
+VHL	 NM_000551.3	CNV变异超过100个（只有3个外显子）	.
+FANCA	 NM_000135.3	CNV变异超过200个	.
+MLH1	 NM_000249.3	CNV变异超过200个	特殊突变：inv. 273592 bp incl. ex. 1 and ex. 1-3 of DCLK3；特殊突变：Inversion: intron 15 & LRRFIP2 intron 3；特殊突变：Translocation t(3;5)(p22;q31)
+NF1	 NM_000267.3	CNV变异超过200个	特殊突变：染色体易位
+BRCA1（同源数据库查不到信息）	 NM_007294.4	CNV变异超过300个	特殊变异 Recombination with BRCA1 pseudogene
+LDLR	 NM_000527.4	CNV变异超过300个	.
+MSH2	 NM_000251.2	CNV变异超过300个	特殊突变：10Mb inversion, intr. 7-3`UTR；特殊突变：9.5 Mb inversion ex. 1-7；特殊突变：Inv. ex. 8-16；特殊突变：Inv. nts. 1338-1361, subst. for nts. 1311-1334 in Exon 8；特殊突变： Inversion of ex. 1_7；特殊突变： Inversion of ex. 2_6；特殊突变：Inversion of ex. 2-6；特殊突变：Inversion of ex. 8-16
+NRXN1	 NM_001135659.2	CNV变异超过300个	特殊突变染色体重排；特殊突变染色体易位
+PRKN	 NM_004562.2	CNV变异超过300个	.
+EPCAM	 NM_002354.2	CNV变异超过50个,其中EX8-9缺失最常见（选外显子3，5，9）	.
