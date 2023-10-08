@@ -309,7 +309,7 @@ def read_mrna_gene_info(file):
     return mrna_gene_info
 
 
-def find_closest_region(one_obj, others_obj, need = 1):
+def find_closest_region(one_obj, others_obj, need = 1, name_prefix=""):
     '''找到与目标区域中心点最近的一个区域'''
     center = int((one_obj['start'] + one_obj['end']) / 2)
     distance = {}
@@ -327,7 +327,7 @@ def find_closest_region(one_obj, others_obj, need = 1):
         if len(others_obj) > 1:
             for index in ordered_index[1:]:
                 tmp = others_obj[ordered_index[index]]
-                two.append(tmp['name'] + "," + tmp['chrom'] + ":" + str(tmp['start']) + "-" + str(tmp['end']))
+                two.append(name_prefix + tmp['name'] + "," + tmp['chrom'] + ":" + str(tmp['start']) + "-" + str(tmp['end']))
         if two:
             two = ";".join(two)
         else:
@@ -347,7 +347,7 @@ def design_yellow(designed_region, mrna_gene_info, yellow):
         stop_codon = mrna_gene_info[mrna]['stop_codon'][0]
         chrom = start_codon['chrom']
         middle = int((min(start_codon['start'], stop_codon['start']) + max(start_codon['end'], stop_codon['end'])) / 2)
-        near, candidate = find_closest_region({'chrom': chrom, 'start': middle, 'end': middle}, mrna_gene_info[mrna]['CDS'], 2)
+        near, candidate = find_closest_region({'chrom': chrom, 'start': middle, 'end': middle}, mrna_gene_info[mrna]['CDS'], 2, gene + "-")
         # 记录
         name = gene + '-1'
         designed_region[name] = {
@@ -415,7 +415,7 @@ def design_green(designed_region, mrna_gene_info, green):
             for exon_candidate in green[mrna]['exon_candidate']:
                 for exon_tmp in mrna_gene_info[mrna]['exon']:
                     if exon_candidate == exon_tmp['feature_number']:
-                        candidates.append(name + "," + exon_tmp['chrom'] + ":" + str(exon_tmp['start']) + "-" + str(exon_tmp['end']))
+                        candidates.append(gene + "-" + exon_tmp['name'] + "," + exon_tmp['chrom'] + ":" + str(exon_tmp['start']) + "-" + str(exon_tmp['end']))
                         break
             candidate = ";".join(candidates) if candidates else '.'
             if not exon:
@@ -781,23 +781,33 @@ def output_blue(designed_region, workbook, wb_format):
     worksheet.set_column(2, 2, 15) # 修改列宽
     worksheet.set_column(5, 6, 15) # 修改列宽
     worksheet.set_column(10, 21, 12) # 修改列宽
+    total = 0
+    success = 0
     for name in sorted(designed_region.keys()):
         if not designed_region[name]['type'].startswith('blue'):
             continue
+        total += 1
+        if designed_region[name].get('probe_chrom', '.') != '.':
+            success += 1
+            
         values = [designed_region[name][title] if title in designed_region[name] else '.' for title in titles]
+        
         for col in range(len(titles)):
             # 颜色标记
             style = 'normal_style'
             # 输出
             worksheet.write(row, col, values[col], wb_format[style])
         row += 1
+    
+    print(f"    共需要 {total} 个探针，成功设计出 {success} 个探针，完成率 {round(100 * success/total)} %， 缺失 {total - success} 个")
+    
 
 def output_yellow(designed_region, workbook, wb_format):
     print("输出黄色结果")
     # 探针信息
     probe_titles = ['chrom', 'start', 'end', 'strand', '5_seq', '5_length', '5_tm', '3_seq', '3_length', '3_tm']
     # excel表头
-    titles = ['name', 'gene', 'mrna', 'chrom', 'start', 'end', 'center', 'width', 'cnvplex', 'type', 'candidate']
+    titles = ['name', 'gene', 'mrna', 'chrom', 'start', 'end', 'center', 'width', 'cnvplex', 'type', 'candidate', 'message']
     # excel表头追加
     for probe_title in probe_titles:
         titles.append('probe_' + probe_title)
@@ -812,9 +822,14 @@ def output_yellow(designed_region, workbook, wb_format):
     worksheet.set_column(2, 2, 15) # 修改列宽
     worksheet.set_column(4, 6, 15) # 修改列宽
     worksheet.set_column(10, 21, 12) # 修改列宽
+    total = 0
+    success = 0
     for name in sorted(designed_region.keys()):
         if not designed_region[name]['type'].startswith('yellow'):
             continue
+        total += 1
+        if designed_region[name].get('probe_chrom', '.') != '.':
+            success += 1
         values = [designed_region[name][title] if title in designed_region[name] else '.' for title in titles]
         for col in range(len(titles)):
             # 颜色标记
@@ -822,6 +837,8 @@ def output_yellow(designed_region, workbook, wb_format):
             # 输出
             worksheet.write(row, col, values[col], wb_format[style])
         row += 1
+        
+    print(f"    共需要 {total} 个探针，成功设计出 {success} 个探针，完成率 {round(100 * success/total)} %， 缺失 {total - success} 个")
     
 def output_green(designed_region, workbook, wb_format):
     print("输出绿色结果")
@@ -846,9 +863,19 @@ def output_green(designed_region, workbook, wb_format):
     worksheet.set_column(2, 2, 15) # 修改列宽
     worksheet.set_column(4, 5, 15) # 修改列宽
     worksheet.set_column(10, 31, 12) # 修改列宽
+    total = 0
+    success = 0
+    success_half = 0
     for name in sorted(designed_region.keys()):
         if not designed_region[name]['type'].startswith('green'):
             continue
+        total += 1
+        if designed_region[name].get('probe1_chrom', '.') != '.':
+            if designed_region[name].get('probe2_chrom', '.') != '.':
+                success += 1
+            else:
+                success_half += 1
+
         values = [designed_region[name][title] if title in designed_region[name] else '.' for title in titles]
         for col in range(len(titles)):
             # 颜色标记
@@ -856,6 +883,9 @@ def output_green(designed_region, workbook, wb_format):
             # 输出
             worksheet.write(row, col, values[col], wb_format[style])
         row += 1
+        
+    
+    print(f"    共需要 {total} 个探针，成功设计出 {success} 个探针，完成率 {round(100 * success/total)} %， 设计出一半的有  {success_half} 个， 缺失 {total - success - success_half}  + {success_half} 个")
 
 def match_probe_by_region(designed_region, probe_list):
     print('对蓝色、黄色探针做区域匹配')
@@ -865,28 +895,37 @@ def match_probe_by_region(designed_region, probe_list):
         # 只做蓝色、黄色
         if not designed_region[name]['type'].startswith('blue') and not designed_region[name]['type'].startswith('yellow'):
             continue
+        # 当前探针可以设计的区域
+        possible_regions = [{'chrom': designed_region[name]['chrom'], 'start': designed_region[name]['start'], 'end': designed_region[name]['end']}]
+        if designed_region[name]['candidate'] != '.':
+            for tmp in designed_region[name]['candidate'].split(';'):
+                cds_name, region_info = tmp.split(',')
+                chrom, start, end = re.split('[:-]', region_info)
+                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': cds_name})
+                
         # 寻找区域内包含的探针
-        probe_info = {}
-        for probe_name in probe_list.keys():
-            if probe_list[probe_name]['used']:
-                continue
-            # 同一个染色体
-            if probe_list[probe_name]['chrom'] != designed_region[name]['chrom']:
-                continue
-            # 是否有交集
-            overlap_start = max(designed_region[name]['start'], probe_list[probe_name]['start'])
-            overlap_end = min(designed_region[name]['end'], probe_list[probe_name]['end'])
-            if overlap_end < overlap_start:
-                continue
-            # 候选探针
-            probe_info[probe_name] = max(abs(65 - probe_list[probe_name]['5_tm']), abs(65 - probe_list[probe_name]['3_tm']))
-        # 选择tm最接近65的
-        if probe_info:
-            best_probe = sorted(probe_info.keys(), key=lambda probe_name: probe_info[probe_name])[0]
-            # 储存探针信息
-            for probe_title in probe_titles:
-                designed_region[name]['probe_' + probe_title] = probe_list[best_probe][probe_title]
-            probe_list[best_probe]['used'] = True
+        for index, possible_region in enumerate(possible_regions):
+            probe_info = {}
+            for probe_name in probe_list.keys():
+                if probe_list[probe_name]['used']:
+                    continue
+                # 计算重叠区域长度
+                overlap_length = calculate_overlap_length(possible_region, probe_list[probe_name])
+                if overlap_length == 0:
+                    continue
+                # 候选探针
+                probe_info[probe_name] = max(abs(65 - probe_list[probe_name]['5_tm']), abs(65 - probe_list[probe_name]['3_tm']))
+            # 选择tm最接近65的
+            if probe_info:
+                best_probe = sorted(probe_info.keys(), key=lambda probe_name: probe_info[probe_name])[0]
+                # 储存探针信息
+                for probe_title in probe_titles:
+                    designed_region[name]['probe_' + probe_title] = probe_list[best_probe][probe_title]
+                probe_list[best_probe]['used'] = True
+                if index != 0:
+                    designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计"
+                # 找到一个即可
+                break
 
 
 def calculate_overlap_length(region1, region2):
@@ -912,68 +951,123 @@ def match_probe_by_region2(designed_region, probe_list):
         # 有两个探针异常，不能做
         if designed_region[name]['start'] == '.':
             continue
-        # 1. 寻找区域内包含的探针
-        probe_info = {}
-        for probe_name in probe_list.keys():
-            if probe_list[probe_name]['used']:
-                continue
-            # 计算重叠区域长度
-            overlap_length = calculate_overlap_length(designed_region[name], probe_list[probe_name])
-            if overlap_length == 0:
-                continue
-            # 候选探针
-            probe_info[probe_name] = max(abs(65 - probe_list[probe_name]['5_tm']), abs(65 - probe_list[probe_name]['3_tm']))
         
-        # 2. 寻找区域内两两之间距离最远的探针
-        if probe_info:
-            probe_names = list(probe_info.keys())
-            if len(probe_names) == 1:
-                # 2.1 区域内只设计出一个探针
-                best_probe = probe_names[0]
-                # 储存探针信息
-                for probe_title in probe_titles:
-                    designed_region[name]['probe_' + probe_title] = probe_list[best_probe][probe_title]
-                probe_list[best_probe]['used'] = True
-            else:
-                # 2.2 探针两两组合，计算距离，拿到距离最大的两个探针的编号
-                best_probe1 = '.'
-                best_probe2 = '.'
-                distance = 0
-                for probe_name1, probe_name2 in itertools.combinations(probe_names,2):
-                    dist = abs(probe_list[probe_name1]['start'] - probe_list[probe_name2]['start'])
-                    if dist > distance:
-                        best_probe1 = probe_name1
-                        best_probe2 = probe_name2
-                        distance = dist
-                        
-                # 看一下两个探针的起始坐标，是否要调换一下顺序（从小到大）
-                if probe_list[best_probe1]['start'] > probe_list[best_probe2]['start']:
-                    best_probe1, best_probe2 = best_probe2, best_probe1
-                    
-                # 储存探针信息
-                for probe_title in probe_titles:
-                    designed_region[name]['probe1_' + probe_title] = probe_list[best_probe1][probe_title]
-                for probe_title in probe_titles:
-                    designed_region[name]['probe2_' + probe_title] = probe_list[best_probe2][probe_title]
-                designed_region[name]['two_probe_distance'] = distance
+        # 当前探针可以设计的区域
+        possible_regions = [{'chrom': designed_region[name]['chrom'], 'start': designed_region[name]['start'], 'end': designed_region[name]['end']}]
+        if designed_region[name]['candidate'] != '.':
+            for tmp in designed_region[name]['candidate'].split(';'):
+                cds_name, region_info = tmp.split(',')
+                chrom, start, end = re.split('[:-]', region_info)
+                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': cds_name})
                 
-                # 两个探针之间是否重叠？
-                designed_region[name]['two_probe_overlap'] = calculate_overlap_length(probe_list[best_probe1], probe_list[best_probe2])
+        for index, possible_region in enumerate(possible_regions):
+            # 1. 寻找区域内包含的探针
+            probe_info = {}
+            for probe_name in probe_list.keys():
+                if probe_list[probe_name]['used']:
+                    continue
+                # 计算重叠区域长度
+                overlap_length = calculate_overlap_length(possible_region, probe_list[probe_name])
+                if overlap_length == 0:
+                    continue
+                # 候选探针
+                probe_info[probe_name] = max(abs(65 - probe_list[probe_name]['5_tm']), abs(65 - probe_list[probe_name]['3_tm']))
+
+            # 2. 寻找区域内两两之间距离最远的探针
+            if probe_info:
+                probe_names = list(probe_info.keys())
+                if len(probe_names) == 1:
+                    # 2.1 区域内只设计出一个探针
+                    best_probe = probe_names[0]
+                    # 储存探针信息
+                    for probe_title in probe_titles:
+                        designed_region[name]['probe1_' + probe_title] = probe_list[best_probe][probe_title]
+                    probe_list[best_probe]['used'] = True
+                    designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计了1个探针"
+                else:
+                    # 2.2 探针两两组合，计算距离，拿到距离最大的两个探针的编号
+                    best_probe1 = '.'
+                    best_probe2 = '.'
+                    distance = 0
+                    for probe_name1, probe_name2 in itertools.combinations(probe_names,2):
+                        dist = abs(probe_list[probe_name1]['start'] - probe_list[probe_name2]['start'])
+                        if dist > distance:
+                            best_probe1 = probe_name1
+                            best_probe2 = probe_name2
+                            distance = dist
+
+                    # 看一下两个探针的起始坐标，是否要调换一下顺序（从小到大）
+                    if probe_list[best_probe1]['start'] > probe_list[best_probe2]['start']:
+                        best_probe1, best_probe2 = best_probe2, best_probe1
+
+                    # 储存探针信息
+                    for probe_title in probe_titles:
+                        designed_region[name]['probe1_' + probe_title] = probe_list[best_probe1][probe_title]
+                    for probe_title in probe_titles:
+                        designed_region[name]['probe2_' + probe_title] = probe_list[best_probe2][probe_title]
+                    designed_region[name]['two_probe_distance'] = distance
+
+                    # 两个探针之间是否重叠？
+                    designed_region[name]['two_probe_overlap'] = calculate_overlap_length(probe_list[best_probe1], probe_list[best_probe2])
+
+                    # 两个探针的strand方向是否一样？如果一样，修改第二个探针的方向
+                    if probe_list[best_probe1]['strand'] == probe_list[best_probe2]['strand']:
+                        # ['chrom', 'start', 'end', 'strand', '5_seq', '5_length', '5_tm', '3_seq', '3_length', '3_tm']
+                        designed_region[name]['probe2_strand'] = '-' if probe_list[best_probe2]['strand'] == '+' else '+'
+                        # 3/5 调换。同时序列反向互补
+                        designed_region[name]['probe2_5_seq'] = probe_list[best_probe2]['3_seq'][::-1].translate(trantab) 
+                        designed_region[name]['probe2_5_length'] = probe_list[best_probe2]['3_length']
+                        designed_region[name]['probe2_5_tm'] = probe_list[best_probe2]['3_tm']
+
+                        designed_region[name]['probe2_3_seq'] = probe_list[best_probe2]['5_seq'][::-1].translate(trantab) 
+                        designed_region[name]['probe2_3_length'] = probe_list[best_probe2]['5_length']
+                        designed_region[name]['probe2_3_tm'] = probe_list[best_probe2]['5_tm']
+
+                    probe_list[best_probe1]['used'] = True
+                    probe_list[best_probe2]['used'] = True
+                    if index != 0:
+                        designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计"
+                    break
+
                 
-                # 两个探针的strand方向是否一样？如果一样，修改第二个探针的方向
-                if probe_list[best_probe1]['strand'] == probe_list[best_probe2]['strand']:
-                    # ['chrom', 'start', 'end', 'strand', '5_seq', '5_length', '5_tm', '3_seq', '3_length', '3_tm']
-                    designed_region[name]['probe2_strand'] = '-' if probe_list[best_probe2]['strand'] == '+' else '+'
-                    # 3/5 调换。同时序列反向互补
-                    designed_region[name]['probe2_5_seq'] = probe_list[best_probe2]['3_seq'][::-1].translate(trantab) 
-                    designed_region[name]['probe2_5_length'] = probe_list[best_probe2]['3_length']
-                    designed_region[name]['probe2_5_tm'] = probe_list[best_probe2]['3_tm']
-                    
-                    designed_region[name]['probe2_3_seq'] = probe_list[best_probe2]['5_seq'][::-1].translate(trantab) 
-                    designed_region[name]['probe2_3_length'] = probe_list[best_probe2]['5_length']
-                    designed_region[name]['probe2_3_tm'] = probe_list[best_probe2]['5_tm']
-                
-                probe_list[best_probe1]['used'] = True
-                probe_list[best_probe2]['used'] = True
-                
-                
+def output_readme(workbook, wb_format):
+    '''输出readme'''
+        ##########
+    # read me 表格
+    ##########
+    worksheet_readme = workbook.add_worksheet('read me')
+    worksheet_readme.set_column(0, 0, 30)
+    worksheet_readme.set_column(1, 1, 30)
+    worksheet_readme.set_column(2, 2, 30)
+    readme_info = [['sheet', 'title', 'description'],
+                    ['蓝色/黄色/绿色', 'name', '区域命名。 蓝色： UTR3区域命名规则为 基因-UTR3； 外显子区域命名规则为 基因-exon外显子编号-区域编号，按照1K至少一个探针的设计要求，对exon区域进行等分，并编号1； promoter的 0.5K/1K/2K 命名为 基因-promoternK。黄色：基因-1 表示起始密码子范围； 基因-2 表示中间最近外显子；基因-3表示终止密码子。 绿色： 基因-exon外显子编号'],
+                    ["蓝色/黄色/绿色", "gene", "基因"],
+                    ["蓝色/黄色/绿色", "mrna", "转录本"],
+                    ["蓝色/黄色/绿色", "chrom", "要设计探针的区域的染色体编号"],
+                    ["蓝色/黄色/绿色", "start", "要设计探针的区域的起始坐标"],
+                    ["蓝色/黄色/绿色", "end", "要设计探针的区域的终止坐标"],
+                    ["蓝色/黄色/绿色", "width", "区域大小"],
+                    ["蓝色/黄色/绿色", "type", "区域类型"],
+                    ["蓝色/黄色/绿色", "message", "补充的提示信息"],
+                    ["蓝色/黄色/绿色", "probe_name", "探针原始名称。从cnvplex软件提取出来的，格式： 文件名-探针名。仅供溯源参考"],
+                    ["蓝色/黄色/绿色", "probe_chrom", "cnvplex软件设计结果：探针的染色体"],
+                    ["蓝色/黄色/绿色", "probe_start", "cnvplex软件设计结果：探针的起始坐标"],
+                    ["蓝色/黄色/绿色", "probe_end", "cnvplex软件设计结果：探针的终止坐标"],
+                    ["蓝色/黄色/绿色", "probe_strand", "cnvplex软件设计结果：探针的方向"],
+                    ["蓝色/黄色/绿色", "probe_5_seq", "cnvplex软件设计结果：5'探针序列"],
+                    ["蓝色/黄色/绿色", "probe_5_length", "cnvplex软件设计结果：5'探针序列长度"],
+                    ["蓝色/黄色/绿色", "probe_5_tm", "cnvplex软件设计结果：5'探针序列tm值"],
+                    ["蓝色/黄色/绿色", "probe_3_seq", "cnvplex软件设计结果：3'探针序列"],
+                    ["蓝色/黄色/绿色", "probe_3_length", "cnvplex软件设计结果：3'探针序列长度"],
+                    ["蓝色/黄色/绿色", "probe_3_tm", "cnvplex软件设计结果：3'探针序列tm值"],
+                    ["绿色", "two_probe_distance", "两个探针start坐标的距离"],
+                    ["绿色", "two_probe_overlap", "两个探针的overlap长度"],
+                    ["黄色/绿色", "candidate", "候选的可以设计探针的区域"],
+                  ]
+    row = 0
+    for sheet, title, desc in readme_info:
+        style = 'title_style' if row == 0 else 'normal_style_left_align'
+        worksheet_readme.write(row, 0, sheet, wb_format[style])
+        worksheet_readme.write(row, 1, title, wb_format[style])
+        worksheet_readme.write(row, 2, desc, wb_format[style])
+        row += 1

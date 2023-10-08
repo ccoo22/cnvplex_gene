@@ -6,8 +6,8 @@ import xlsxwriter
 from utils import (design_blue, design_green, design_yellow,
                    judge_green_to_blue, match_probe_by_region,
                    match_probe_by_region2, output_blue, output_green,
-                   output_yellow, parse_probe_info, read_mrna_gene_info,
-                   read_probe, workbook_format)
+                   output_readme, output_yellow, parse_probe_info,
+                   read_mrna_gene_info, read_probe, workbook_format)
 
 genome = '/home/genesky/database_new/ucsc/fasta/hg19/samtools_index/hg19.fa'
 
@@ -46,6 +46,7 @@ output_blue(designed_region, workbook, wb_format)
 output_yellow(designed_region, workbook, wb_format)
 output_green(designed_region, workbook, wb_format)
 
+output_readme(workbook, wb_format)
 
 workbook.close()
 
