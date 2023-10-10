@@ -658,11 +658,15 @@ def design_blue(designed_region, mrna_gene_info, blue, genome):
 def read_probe(probe_dir):
     probe_info = {}
     duplicate_position = {}
+    file_count = 0
+    probe_count = 0
     for subdir in glob.glob(probe_dir + "/*"):
         subname = os.path.basename(subdir)
         # 记录重复的探针位置，防止被多次使用
         for excel in glob.glob(f'{probe_dir}/{subname}/*.xlsx'):
-            log.info(f'读入探针文件：{excel}')
+            file_count += 1
+            print(f'\r读入探针文件：{excel} 第 {file_count} 个' + ' ' * 30, end = '')
+            # log.info(f'读入探针文件：{excel}')
             excel_name = os.path.basename(excel)
             wb = openpyxl.load_workbook(excel)
             ws_pair = wb['探针对信息']
@@ -690,8 +694,9 @@ def read_probe(probe_dir):
                 # 检查是否有重复，重复的结果不用在保存了
                 genome_position = '_'.join([chrom, str(positions[0]), str(positions[1]), strand])
                 if genome_position in duplicate_position:
-                    print("重复探针：", genome_position)
+                    # print("重复探针：", genome_position)
                     continue
+                probe_count += 1
                 duplicate_position[genome_position] = 1
                 probe_info[probe_name] = {}
                 # probe_info[probe_name] = tmps
@@ -733,6 +738,7 @@ def read_probe(probe_dir):
                 if probe_type_53 == '3':
                     probe_info[probe_name][f'3_seq'] = tmps['序列信息'].split(' ')[0]
             wb.close()
+    print(f'共读入 {probe_count} 个探针')
     return probe_info
 
 def workbook_format(workbook):
@@ -885,7 +891,7 @@ def output_green(designed_region, workbook, wb_format):
         row += 1
         
     
-    print(f"    共需要 {total} 个探针，成功设计出 {success} 个探针，完成率 {round(100 * success/total)} %， 设计出一半的有  {success_half} 个， 缺失 {total - success - success_half}  + {success_half} 个")
+    print(f"    共需要 {total} 对探针，成功设计出 {success} 对探针，完成率 {round(100 * success/total)} %， 设计出一半的有  {success_half} 个， 缺失 {total - success - success_half} 对  + {success_half} 个")
 
 def match_probe_by_region(designed_region, probe_list):
     print('对蓝色、黄色探针做区域匹配')
@@ -983,7 +989,8 @@ def match_probe_by_region2(designed_region, probe_list):
                     for probe_title in probe_titles:
                         designed_region[name]['probe1_' + probe_title] = probe_list[best_probe][probe_title]
                     probe_list[best_probe]['used'] = True
-                    designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计了1个探针"
+                    if index != 0:
+                        designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计了1个探针"
                 else:
                     # 2.2 探针两两组合，计算距离，拿到距离最大的两个探针的编号
                     best_probe1 = '.'
@@ -1060,6 +1067,7 @@ def output_readme(workbook, wb_format):
                     ["蓝色/黄色/绿色", "probe_3_seq", "cnvplex软件设计结果：3'探针序列"],
                     ["蓝色/黄色/绿色", "probe_3_length", "cnvplex软件设计结果：3'探针序列长度"],
                     ["蓝色/黄色/绿色", "probe_3_tm", "cnvplex软件设计结果：3'探针序列tm值"],
+                    ["蓝色", "from", "值是blue/green. blue: 是蓝色标记的基因。green: 是绿色标记的基因，但是按照30%外显子占比的要求，用蓝色规则设计"],
                     ["绿色", "two_probe_distance", "两个探针start坐标的距离"],
                     ["绿色", "two_probe_overlap", "两个探针的overlap长度"],
                     ["黄色/绿色", "candidate", "候选的可以设计探针的区域"],
