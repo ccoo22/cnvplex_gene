@@ -39,7 +39,7 @@ match_probe_by_region(designed_region, probe_list)
 match_probe_by_region2(designed_region, probe_list)
 
 # 结果输出
-excel = './probe/probe_whole_gene.xlsx'
+excel = './probe/probe_whole_gene_raw.xlsx'
 workbook = xlsxwriter.Workbook(excel)
 wb_format = workbook_format(workbook)
 output_blue(designed_region, workbook, wb_format)
@@ -50,3 +50,15 @@ output_readme(workbook, wb_format)
 
 workbook.close()
 
+
+# 剔除cnvplex列名
+excel = './probe/probe_whole_gene.xlsx'
+workbook = xlsxwriter.Workbook(excel)
+wb_format = workbook_format(workbook)
+output_blue(designed_region, workbook, wb_format, drop_cnvplex=True)
+output_yellow(designed_region, workbook, wb_format, drop_cnvplex=True)
+output_green(designed_region, workbook, wb_format, drop_cnvplex=True)
+
+output_readme(workbook, wb_format)
+
+workbook.close()

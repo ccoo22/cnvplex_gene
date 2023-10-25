@@ -391,6 +391,9 @@ def design_yellow(designed_region, mrna_gene_info, yellow):
             designed_region[name]['need_probe'] = 1  # 区域只需要1个探针
             designed_region[name]['message'] = '.'
             designed_region[name]['cnvplex'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']) + "-" + str(designed_region[name]['end'])
+            # 候选区域拓展
+            designed_region[name]['expand100'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-100) + "-" + str(designed_region[name]['end']+100)
+            designed_region[name]['expand200'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-200) + "-" + str(designed_region[name]['end']+200)
 
 def design_green(designed_region, mrna_gene_info, green):
     '''绿色标记基因探针设计'''
@@ -449,6 +452,8 @@ def design_green(designed_region, mrna_gene_info, green):
                     'need_probe': 2,
                     'candidate': candidate,
                     'cnvplex': name + "," + exon['chrom'] + ":" + str(exon['start']) + "-" + str(exon['end']),
+                    'expand100': name + "," + exon['chrom'] + ":" + str(exon['start']-100) + "-" + str(exon['end']+100),
+                    'expand200': name + "," + exon['chrom'] + ":" + str(exon['start']-200) + "-" + str(exon['end']+200),
                     'message': '.'
                 }
                 
@@ -492,6 +497,8 @@ def design_green(designed_region, mrna_gene_info, green):
                     'need_probe': 2,
                     'candidate': candidate,
                     'cnvplex': name + "," + intron['chrom'] + ":" + str(intron['start']) + "-" + str(intron['end']),
+                    'expand100': name + "," + intron['chrom'] + ":" + str(intron['start']-100) + "-" + str(intron['end']+100),
+                    'expand200': name + "," + intron['chrom'] + ":" + str(intron['start']-200) + "-" + str(intron['end']+200),
                     'message': '.'
                 }
 
@@ -545,6 +552,8 @@ def design_blue(designed_region, mrna_gene_info, blue, genome):
                     'message': '.'
                 }
             designed_region[name]['cnvplex'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']) + "-" + str(designed_region[name]['end'])
+            designed_region[name]['expand100'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-100) + "-" + str(designed_region[name]['end']+100)
+            designed_region[name]['expand200'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-200) + "-" + str(designed_region[name]['end']+200)
     
     # 2. UTR3 设计
     print('    UTR3设计')
@@ -609,6 +618,8 @@ def design_blue(designed_region, mrna_gene_info, blue, genome):
                     'message': info
                 }
         designed_region[name]['cnvplex'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']) + "-" + str(designed_region[name]['end'])
+        designed_region[name]['expand100'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-100) + "-" + str(designed_region[name]['end']+100)
+        designed_region[name]['expand200'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-200) + "-" + str(designed_region[name]['end']+200)
     
     # 3. exon设计
     print('    exon区域设计（剔除UTR3区域）')
@@ -652,6 +663,8 @@ def design_blue(designed_region, mrna_gene_info, blue, genome):
                     'message': f'当前外显子需要设计 {probe_count} 个探针'
                 }
                 designed_region[name]['cnvplex'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']) + "-" + str(designed_region[name]['end'])
+                designed_region[name]['expand100'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-100) + "-" + str(designed_region[name]['end']+100)
+                designed_region[name]['expand200'] = name + "," + designed_region[name]['chrom'] + ":" + str(designed_region[name]['start']-200) + "-" + str(designed_region[name]['end']+200)
 
 
 
@@ -766,13 +779,15 @@ def workbook_format(workbook):
     wb_format['normal_style_red'] = workbook.add_format({'font_size': 12, 'font_color': 'black', 'font_name': 'Times New Roman', 'border': 1, 'border_color': 'black', 'bg_color': 'red', 'align': 'center', 'valign': 'vcenter',})
     return wb_format
 
-def output_blue(designed_region, workbook, wb_format):
+def output_blue(designed_region, workbook, wb_format, drop_cnvplex=False):
     print("输出蓝色结果")
     # 探针信息
     probe_titles = ['chrom', 'start', 'end', 'strand', '5_seq', '5_length', '5_tm', '3_seq', '3_length', '3_tm']
     
     # excel表头
-    titles = ['name', 'gene', 'mrna', 'gene_from', 'chrom', 'start', 'end', 'width', 'cnvplex', 'type', 'message']
+    titles = ['name', 'gene', 'mrna', 'gene_from', 'chrom', 'start', 'end', 'width', 'expand100', 'expand200', 'cnvplex','type', 'message']
+    if drop_cnvplex:
+        titles = [title for title in titles if title != 'cnvplex']
     # excel表头追加
     for probe_title in probe_titles:
         titles.append('probe_' + probe_title)
@@ -808,12 +823,14 @@ def output_blue(designed_region, workbook, wb_format):
     print(f"    共需要 {total} 个探针，成功设计出 {success} 个探针，完成率 {round(100 * success/total)} %， 缺失 {total - success} 个")
     
 
-def output_yellow(designed_region, workbook, wb_format):
+def output_yellow(designed_region, workbook, wb_format, drop_cnvplex=False):
     print("输出黄色结果")
     # 探针信息
     probe_titles = ['chrom', 'start', 'end', 'strand', '5_seq', '5_length', '5_tm', '3_seq', '3_length', '3_tm']
     # excel表头
-    titles = ['name', 'gene', 'mrna', 'chrom', 'start', 'end', 'center', 'width', 'cnvplex', 'type', 'candidate', 'message']
+    titles = ['name', 'gene', 'mrna', 'chrom', 'start', 'end', 'center', 'width', 'expand100', 'expand200', 'cnvplex', 'type', 'candidate', 'message']
+    if drop_cnvplex:
+        titles = [title for title in titles if title != 'cnvplex']
     # excel表头追加
     for probe_title in probe_titles:
         titles.append('probe_' + probe_title)
@@ -846,12 +863,14 @@ def output_yellow(designed_region, workbook, wb_format):
         
     print(f"    共需要 {total} 个探针，成功设计出 {success} 个探针，完成率 {round(100 * success/total)} %， 缺失 {total - success} 个")
     
-def output_green(designed_region, workbook, wb_format):
+def output_green(designed_region, workbook, wb_format, drop_cnvplex=False):
     print("输出绿色结果")
     # 探针信息
     probe_titles = ['chrom', 'start', 'end', 'strand', '5_seq', '5_length', '5_tm', '3_seq', '3_length', '3_tm']
     # excel表头
-    titles = ['name', 'gene', 'mrna', 'chrom', 'start', 'end', 'width', 'cnvplex', 'type', 'candidate', 'message', 'two_probe_distance', 'two_probe_overlap']
+    titles = ['name', 'gene', 'mrna', 'chrom', 'start', 'end', 'width', 'cnvplex', 'expand100', 'expand200', 'type', 'candidate', 'message', 'two_probe_distance', 'two_probe_overlap']
+    if drop_cnvplex:
+        titles = [title for title in titles if title != 'cnvplex']
     # excel表头追加
     for probe_title in probe_titles:
         titles.append('probe1_' + probe_title)
@@ -902,12 +921,18 @@ def match_probe_by_region(designed_region, probe_list):
         if not designed_region[name]['type'].startswith('blue') and not designed_region[name]['type'].startswith('yellow'):
             continue
         # 当前探针可以设计的区域
-        possible_regions = [{'chrom': designed_region[name]['chrom'], 'start': designed_region[name]['start'], 'end': designed_region[name]['end']}]
+        possible_regions = [{'chrom': designed_region[name]['chrom'], 'start': designed_region[name]['start'], 'end': designed_region[name]['end'], 'message': '.'}]
         if designed_region[name]['candidate'] != '.':
             for tmp in designed_region[name]['candidate'].split(';'):
                 cds_name, region_info = tmp.split(',')
                 chrom, start, end = re.split('[:-]', region_info)
-                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': cds_name})
+                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': cds_name, 'message': ' 设计在候选外显子 ' + cds_name })
+        # expand区域
+        for expand_name in ['expand100', 'expand200']:
+            if expand_name in designed_region[name] and designed_region[name][expand_name] != '.':
+                tmp_name, region_info = designed_region[name][expand_name].split(',')
+                chrom, start, end = re.split('[:-]', region_info)
+                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': expand_name, 'message': ' 设计在拓展区域 ' + expand_name })
                 
         # 寻找区域内包含的探针
         for index, possible_region in enumerate(possible_regions):
@@ -928,8 +953,14 @@ def match_probe_by_region(designed_region, probe_list):
                 for probe_title in probe_titles:
                     designed_region[name]['probe_' + probe_title] = probe_list[best_probe][probe_title]
                 probe_list[best_probe]['used'] = True
-                if index != 0:
-                    designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计"
+                
+                if designed_region[name]['message'] == ".":
+                    if possible_region['message'] != '.':
+                        designed_region[name]['message'] = possible_region['message']
+                else:
+                    if possible_region['message'] != '.':
+                        designed_region[name]['message'] += possible_region['message']
+
                 # 找到一个即可
                 break
 
@@ -959,13 +990,23 @@ def match_probe_by_region2(designed_region, probe_list):
             continue
         
         # 当前探针可以设计的区域
-        possible_regions = [{'chrom': designed_region[name]['chrom'], 'start': designed_region[name]['start'], 'end': designed_region[name]['end']}]
+        possible_regions = [{'chrom': designed_region[name]['chrom'], 'start': designed_region[name]['start'], 'end': designed_region[name]['end'], 'message' : '.'}]
         if designed_region[name]['candidate'] != '.':
             for tmp in designed_region[name]['candidate'].split(';'):
                 cds_name, region_info = tmp.split(',')
                 chrom, start, end = re.split('[:-]', region_info)
-                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': cds_name})
-                
+                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': cds_name, 'message': ' 设计在候选区 ' + cds_name})
+        
+        # expand区域
+        for expand_name in ['expand100', 'expand200']:
+            if expand_name in designed_region[name] and designed_region[name][expand_name] != '.':
+                tmp_name, region_info = designed_region[name][expand_name].split(',')
+                chrom, start, end = re.split('[:-]', region_info)
+                possible_regions.append({'chrom': chrom, 'start':int(start), 'end': int(end), 'name': expand_name, 'message': ' 设计在拓展区域 ' + expand_name })
+        
+        probe_count = 0  # 记录当前区域已经设计出的探针数量
+        probe1_candidate = '.'  # 单个探针的情况下，记录这单个探针的名字
+        message = '.'  # 记录message，后面一次性写入
         for index, possible_region in enumerate(possible_regions):
             # 1. 寻找区域内包含的探针
             probe_info = {}
@@ -983,14 +1024,21 @@ def match_probe_by_region2(designed_region, probe_list):
             if probe_info:
                 probe_names = list(probe_info.keys())
                 if len(probe_names) == 1:
+                    # 如果前面已经设计过只有1个探针的情况，这里就不再使用了
+                    if 'probe1_chrom' in designed_region[name] and designed_region[name]['probe1_chrom'] != '.':
+                        continue;
+
                     # 2.1 区域内只设计出一个探针
                     best_probe = probe_names[0]
+                    probe1_candidate = best_probe
+                    probe_count = 1
                     # 储存探针信息
                     for probe_title in probe_titles:
                         designed_region[name]['probe1_' + probe_title] = probe_list[best_probe][probe_title]
-                    probe_list[best_probe]['used'] = True
-                    if index != 0:
-                        designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计了1个探针"
+                    
+                    # 只有单个探针的话，先不要记录它已经被使用，防止区域拓展时，找不到它
+                    # probe_list[best_probe]['used'] = True
+                    message = possible_region['message'] + " 只能设计出1个探针"
                 else:
                     # 2.2 探针两两组合，计算距离，拿到距离最大的两个探针的编号
                     best_probe1 = '.'
@@ -998,11 +1046,30 @@ def match_probe_by_region2(designed_region, probe_list):
                     distance = 0
                     for probe_name1, probe_name2 in itertools.combinations(probe_names,2):
                         dist = abs(probe_list[probe_name1]['start'] - probe_list[probe_name2]['start'])
-                        if dist > distance:
+                        if dist >= distance:
                             best_probe1 = probe_name1
                             best_probe2 = probe_name2
                             distance = dist
-
+                    overlap_length = calculate_overlap_length(probe_list[best_probe1], probe_list[best_probe2])
+                    # 重叠是否过高？
+                    if overlap_length >= 10:
+                        # 如果前面已经设计过只有1个探针的情况，这里就不再使用了
+                        if 'probe1_chrom' in designed_region[name] and designed_region[name]['probe1_chrom'] != '.':
+                            continue;
+                        # 2.1 区域内只设计出一个探针
+                        best_probe = best_probe1
+                        probe1_candidate = best_probe
+                        probe_count = 1
+                        # 储存探针信息
+                        for probe_title in probe_titles:
+                            designed_region[name]['probe1_' + probe_title] = probe_list[best_probe][probe_title]
+                        # 只有单个探针的话，先不要记录它已经被使用，防止区域拓展时，找不到它
+                        # probe_list[best_probe]['used'] = True
+                        
+                        message = possible_region['message'] + " 只能设计出1个探针"
+                            
+                        continue
+                    
                     # 看一下两个探针的起始坐标，是否要调换一下顺序（从小到大）
                     if probe_list[best_probe1]['start'] > probe_list[best_probe2]['start']:
                         best_probe1, best_probe2 = best_probe2, best_probe1
@@ -1032,9 +1099,19 @@ def match_probe_by_region2(designed_region, probe_list):
 
                     probe_list[best_probe1]['used'] = True
                     probe_list[best_probe2]['used'] = True
-                    if index != 0:
-                        designed_region[name]['message'] += f" 在候选区域 {possible_region['name']} 中设计"
+                    probe_count = 2
+                    message = possible_region['message'] 
                     break
+        # 如果只设计了一个探针，此时，可以把它记作used
+        if probe_count == 1:
+            probe_list[probe1_candidate]['used'] = True
+        # 消息填充
+        if designed_region[name]['message'] == ".":
+            if message != '.':
+                designed_region[name]['message'] = message
+        else:
+            if possible_region['message'] != '.':
+                designed_region[name]['message'] += message
 
                 
 def output_readme(workbook, wb_format):
